@@ -333,8 +333,36 @@
 <script>
 const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-let progress = 0;
+
+// --- PERSISTENCE LOGIC ---
+let progress = parseInt(localStorage.getItem('mayProgress')) || 0;
 const maxP = 15;
+
+function saveAll() {
+    localStorage.setItem('mayProgress', progress);
+    localStorage.setItem('phoneTime', document.getElementById("phoneTime").textContent);
+    localStorage.setItem('feetTime', document.getElementById("feetTime").textContent);
+    localStorage.setItem('phoneLogged', document.getElementById("phoneBtn").classList.contains('logged'));
+    localStorage.setItem('feetLogged', document.getElementById("feetBtn").classList.contains('logged'));
+}
+
+function loadAll() {
+    document.getElementById("progressNum").textContent = progress + " / " + maxP;
+    document.getElementById("barFill").style.width = (progress / maxP * 100) + "%";
+    
+    if(localStorage.getItem('phoneTime')) document.getElementById("phoneTime").textContent = localStorage.getItem('phoneTime');
+    if(localStorage.getItem('feetTime')) document.getElementById("feetTime").textContent = localStorage.getItem('feetTime');
+    
+    if(localStorage.getItem('phoneLogged') === 'true') {
+        document.getElementById("phoneBtn").textContent = "✓ Logged";
+        document.getElementById("phoneBtn").classList.add("logged");
+    }
+    if(localStorage.getItem('feetLogged') === 'true') {
+        document.getElementById("feetBtn").textContent = "✓ Logged";
+        document.getElementById("feetBtn").classList.add("logged");
+    }
+}
+// -------------------------
 
 function updateClock() {
   const now = new Date();
@@ -392,6 +420,7 @@ function logTime(type) {
     btn.classList.add("logged");
     showToast(mins <= 6*60+15 ? "🏆 Within 15 min! Win day candidate." : "⏱ Logged at " + timeStr);
   }
+  saveAll();
 }
 
 function resetLog(type) {
@@ -399,6 +428,7 @@ function resetLog(type) {
   const btnEl = document.getElementById(type === "phone" ? "phoneBtn" : "feetBtn");
   timeEl.textContent = "—:——"; timeEl.className = "log-time";
   btnEl.textContent = "Tap to Log"; btnEl.classList.remove("logged");
+  saveAll();
 }
 
 function adjustProg(d) {
@@ -406,6 +436,7 @@ function adjustProg(d) {
   document.getElementById("barFill").style.width = (progress / maxP * 100) + "%";
   document.getElementById("progressNum").textContent = progress + " / " + maxP;
   showToast(d > 0 ? "🏆 Win logged! " + progress + "/" + maxP : "Noted. Resume tomorrow — no reset.");
+  saveAll();
 }
 
 let toastT;
@@ -416,6 +447,7 @@ function showToast(msg) {
   toastT = setTimeout(() => t.classList.remove("show"), 2800);
 }
 
+loadAll();
 updateClock();
 setInterval(updateClock, 1000);
 </script>
