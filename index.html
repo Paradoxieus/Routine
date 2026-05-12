@@ -489,13 +489,44 @@ function downloadJSON() {
 function downloadFile(filename, content, type) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
   document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  try {
+    a.click();
+    showToast('Trying standard download...');
+  } catch (e) {}
+
+  setTimeout(() => {
+    try { a.remove(); } catch (e) {}
+    try { URL.revokeObjectURL(url); } catch (e) {}
+  }, 4000);
+
+  const canShare = navigator.share && navigator.canShare;
+  if (canShare) {
+    const file = new File([blob], filename, { type });
+    const shareable = navigator.canShare({ files: [file] });
+    if (shareable) {
+      setTimeout(async () => {
+        try {
+          await navigator.share({ files: [file], title: filename, text: 'Exported from Frans Routine Logger' });
+          showToast('Opened Android share sheet. Save to Files/Drive/Telegram.');
+        } catch (err) {}
+      }, 300);
+      return;
+    }
+  }
+
+  setTimeout(() => {
+    try {
+      const win = window.open(url, '_blank');
+      if (win) showToast('If download fails, long-press or use share sheet.');
+    } catch (e) {}
+  }, 500);
 }
 function renderAll() {
   ensureToday();
