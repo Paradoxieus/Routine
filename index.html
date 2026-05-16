@@ -116,7 +116,7 @@
   .entry-date { font-size: 0.85rem; font-weight: 700; color: var(--text); }
   .entry-badge { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; }
   .entry-badge.win { color: var(--success); background: var(--success-dim); border: 1px solid rgba(94,201,138,0.25); }
-  .entry-badge.miss { color: var(--warn); background: var(--warn-dim); border: 1px solid rgba(232,160,74,0.25); }
+  .entry-badge.offday { color: var(--warn); background: var(--warn-dim); border: 1px solid rgba(232,160,74,0.25); }
   .entry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
   .entry-stat { background: var(--surface-2); border-radius: 10px; padding: 10px; }
   .entry-stat-label { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); font-weight: 700; }
@@ -157,6 +157,14 @@
 
   .toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) translateY(60px); background: var(--surface-2); border: 1px solid rgba(62,201,180,0.25); border-radius: 999px; padding: 9px 20px; font-size: 0.76rem; font-weight: 600; color: var(--accent); white-space: nowrap; z-index: 100; transition: transform 0.38s cubic-bezier(0.34,1.56,0.64,1), opacity 0.38s ease; opacity: 0; pointer-events: none; }
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { padding: 5px 10px; border-radius: 999px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); transition: all 0.15s ease; -webkit-tap-highlight-color: transparent; }
+  .tag.active { background: var(--warn-dim); border-color: rgba(232,160,74,0.35); color: var(--warn); }
+  .reason-input { margin-top: 8px; width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-family: var(--font-body); font-size: 0.78rem; resize: none; min-height: 52px; }
+  .reason-input::placeholder { color: var(--text-faint); }
+  .entry-badge.offday { color: var(--warn); background: var(--warn-dim); border: 1px solid rgba(232,160,74,0.25); }
+
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
 </style>
@@ -187,12 +195,41 @@
     </div>
   </div>
 
+
+  <div class="section-label">Today's Notes</div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:0.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">📵 Phone Down — Note</div>
+      <div class="tag-row" id="phoneTagRow">
+        <button class="tag" onclick="toggleTag('phone','Late night')">Late night</button>
+        <button class="tag" onclick="toggleTag('phone','Social')">Social</button>
+        <button class="tag" onclick="toggleTag('phone','Forgot')">Forgot</button>
+        <button class="tag" onclick="toggleTag('phone','Stressed')">Stressed</button>
+        <button class="tag" onclick="toggleTag('phone','Sick')">Sick</button>
+        <button class="tag" onclick="toggleTag('phone','Weekend')">Weekend</button>
+      </div>
+      <textarea id="phoneReasonInput" class="reason-input" placeholder="Why was phone down late or missed?..." oninput="saveReason('phone')"></textarea>
+    </div>
+    <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:0.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">🦶 Feet on Floor — Note</div>
+      <div class="tag-row" id="feetTagRow">
+        <button class="tag" onclick="toggleTag('feet','Late night')">Late night</button>
+        <button class="tag" onclick="toggleTag('feet','Social')">Social</button>
+        <button class="tag" onclick="toggleTag('feet','Forgot')">Forgot</button>
+        <button class="tag" onclick="toggleTag('feet','Stressed')">Stressed</button>
+        <button class="tag" onclick="toggleTag('feet','Sick')">Sick</button>
+        <button class="tag" onclick="toggleTag('feet','Weekend')">Weekend</button>
+      </div>
+      <textarea id="feetReasonInput" class="reason-input" placeholder="Why were feet on floor late or missed?..." oninput="saveReason('feet')"></textarea>
+    </div>
+  </div>
+
   <div class="section-label">May Summary</div>
   <div class="summary-grid">
     <div class="metric">
-      <div class="metric-label">Win Rate</div>
+      <div class="metric-label">Hit Rate</div>
       <div class="metric-value" id="winRate">0%</div>
-      <div class="metric-sub" id="winSub">0 win days from 0 logged days</div>
+      <div class="metric-sub" id="winSub">0 hit days from 0 logged days</div>
     </div>
     <div class="metric">
       <div class="metric-label">Average Gap</div>
@@ -204,7 +241,7 @@
   <div class="section-label">May Progress — Standing Within 15 Min</div>
   <div class="progress-card">
     <div class="progress-top">
-      <span class="progress-title">Win Days</span>
+      <span class="progress-title">Hit Days</span>
       <span class="progress-num" id="progressNum">0 / 15</span>
     </div>
     <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
@@ -226,7 +263,7 @@
     <div class="r-card" data-s="360" data-e="375"><div class="r-time">6:00</div><div class="r-info"><div class="r-title">Alarm fires</div><div class="r-desc">Sit up. Lights on. Feet on floor within 30 sec.</div></div><div class="r-icon">⚡</div></div>
     <div class="r-card" data-s="375" data-e="400"><div class="r-time">6:15</div><div class="r-info"><div class="r-title">15-min freedom window</div><div class="r-desc">Anything. No going horizontal. No doom scroll.</div></div><div class="r-icon">🪟</div></div>
     <div class="r-card" data-s="400" data-e="450"><div class="r-time">6:40</div><div class="r-info"><div class="r-title">Bath → Skincare → Ready</div><div class="r-desc">Phone goes in bag after this. Morning stays clean.</div></div><div class="r-icon">🚿</div></div>
-    <div class="r-card" data-s="450" data-e="1050"><div class="r-time">7:30</div><div class="r-info"><div class="r-title">Work block</div><div class="r-desc">Commute or Ride. 7:30 AM – 5:30 PM.</div></div><div class="r-icon">💼</div></div>
+    <div class="r-card" data-s="450" data-e="1050"><div class="r-time">7:30</div><div class="r-info"><div class="r-title">Work block</div><div class="r-desc">Commute with Den. 7:30 AM – 5:30 PM.</div></div><div class="r-icon">💼</div></div>
     <div class="r-card" data-s="1050" data-e="1140"><div class="r-time">5:30</div><div class="r-info"><div class="r-title">Post-commute buffer</div><div class="r-desc">Change clothes. Light snack. No screens 15 min.</div></div><div class="r-icon">🏠</div></div>
     <div class="r-card" data-s="1140" data-e="1350"><div class="r-time">7 PM</div><div class="r-info"><div class="r-title">Active window</div><div class="r-desc">Free time. Games on weekdays = no. Weekends only.</div></div><div class="r-icon">🕹️</div></div>
     <div class="r-card warn" data-s="1350" data-e="1380"><div class="r-time">10:30</div><div class="r-info"><div class="r-title">PHONE DOWN 🔒</div><div class="r-desc">In the drawer. Not face-down — in the drawer. Log it.</div></div><div class="r-icon">🔒</div></div>
@@ -284,7 +321,7 @@ function currentTimeData(date=new Date()) {
 }
 function ensureToday() {
   const key = todayKey();
-  if (!state.logs[key]) state.logs[key] = { date: key, phoneDown: '', feetOnFloor: '', feetGap: null, winDay: false, phoneOnTime: null, feetOnTime: null, updatedAt: new Date().toISOString() };
+  if (!state.logs[key]) state.logs[key] = { date: key, phoneDown: '', feetOnFloor: '', feetGap: null, hitDay: false, phoneOnTime: null, feetOnTime: null, phoneTags: [], phoneReason: '', feetTags: [], feetReason: '', updatedAt: new Date().toISOString() };
   return state.logs[key];
 }
 function computeGapFromMins(mins) {
@@ -351,17 +388,17 @@ function logTime(type) {
     t.feetOnFloor = now.display;
     t.feetGap = computeGapFromMins(now.mins);
     t.feetOnTime = now.mins <= (6*60 + 15);
-    t.winDay = !!t.feetOnTime;
+    t.hitDay = !!t.feetOnTime;
     t.updatedAt = new Date().toISOString();
     saveState();
     renderAll();
-    showToast(t.feetOnTime ? '🏆 Within 15 min! Win day logged.' : `⏱ Logged at ${now.display}`);
+    showToast(t.feetOnTime ? '🏆 Within 15 min! Hit day logged.' : `⏱ Logged at ${now.display}`);
   }
 }
 function resetField(type) {
   const t = ensureToday();
   if (type === 'phone') { t.phoneDown = ''; t.phoneOnTime = null; }
-  else { t.feetOnFloor = ''; t.feetGap = null; t.feetOnTime = null; t.winDay = false; }
+  else { t.feetOnFloor = ''; t.feetGap = null; t.feetOnTime = null; t.hitDay = false; }
   t.updatedAt = new Date().toISOString();
   saveState();
   renderAll();
@@ -373,7 +410,7 @@ function getSortedLogs() {
 function computeSummary() {
   const logs = Object.values(state.logs);
   const withFeet = logs.filter(x => x.feetGap !== null && x.feetGap !== undefined);
-  const wins = logs.filter(x => x.winDay).length;
+  const wins = logs.filter(x => x.hitDay).length;
   const totalDays = withFeet.length;
   const avgGap = withFeet.length ? Math.round(withFeet.reduce((s,x)=>s+x.feetGap,0)/withFeet.length) : null;
   const rate = totalDays ? Math.round((wins/totalDays)*100) : 0;
@@ -382,7 +419,7 @@ function computeSummary() {
 function renderSummary() {
   const s = computeSummary();
   document.getElementById('winRate').textContent = `${s.rate}%`;
-  document.getElementById('winSub').textContent = `${s.wins} win days from ${s.totalDays} logged days`;
+  document.getElementById('winSub').textContent = `${s.wins} hit days from ${s.totalDays} logged days`;
   document.getElementById('avgGap').textContent = s.avgGap === null ? '—' : `${s.avgGap}m`;
   document.getElementById('progressNum').textContent = `${s.wins} / ${MAY_TARGET}`;
   document.getElementById('barFill').style.width = `${Math.min(100, (s.wins / MAY_TARGET) * 100)}%`;
@@ -395,7 +432,7 @@ function renderHistory() {
     return;
   }
   wrap.innerHTML = logs.map(entry => {
-    const badge = entry.feetOnTime === null ? '' : `<span class="entry-badge ${entry.winDay ? 'win' : 'miss'}">${entry.winDay ? 'Win day' : 'Miss day'}</span>`;
+    const badge = entry.feetOnTime === null ? '' : `<span class="entry-badge ${entry.winDay ? 'win' : 'offday'}">${entry.winDay ? 'Hit day' : 'Off day'}</span>`;
     const gap = entry.feetGap === null || entry.feetGap === undefined ? '—' : `${entry.feetGap}m`;
     return `
       <div class="entry">
@@ -408,6 +445,11 @@ function renderHistory() {
           <div class="entry-stat"><div class="entry-stat-label">Feet</div><div class="entry-stat-value">${entry.feetOnFloor || '—'}</div></div>
           <div class="entry-stat"><div class="entry-stat-label">Gap</div><div class="entry-stat-value">${gap}</div></div>
         </div>
+        ${((entry.phoneTags&&entry.phoneTags.length)||entry.phoneReason||(entry.feetTags&&entry.feetTags.length)||entry.feetReason) ? `
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:0.72rem;line-height:1.5;">
+            ${(entry.phoneTags&&entry.phoneTags.length)||entry.phoneReason ? `<div><span style="color:var(--text-faint);font-weight:700;">📵</span> ${entry.phoneTags&&entry.phoneTags.length?'<span style="color:var(--warn);font-weight:700;">'+entry.phoneTags.join(', ')+'</span>':''}${entry.phoneReason?(entry.phoneTags&&entry.phoneTags.length?' — ':'')+entry.phoneReason:''}</div>` : ''}
+            ${(entry.feetTags&&entry.feetTags.length)||entry.feetReason ? `<div><span style="color:var(--text-faint);font-weight:700;">🦶</span> ${entry.feetTags&&entry.feetTags.length?'<span style="color:var(--warn);font-weight:700;">'+entry.feetTags.join(', ')+'</span>':''}${entry.feetReason?(entry.feetTags&&entry.feetTags.length?' — ':'')+entry.feetReason:''}</div>` : ''}
+          </div>` : ''}
         <div class="entry-actions">
           <button class="tiny-btn" onclick="copyDay('${entry.date}')">Copy</button>
           <button class="tiny-btn danger" onclick="deleteDay('${entry.date}')">Delete</button>
@@ -417,7 +459,7 @@ function renderHistory() {
 }
 function copyDay(key) {
   const e = state.logs[key];
-  const text = `| ${e.date} | ${e.phoneDown || '—'} | ${e.feetOnFloor || '—'} | ${e.feetGap ?? '—'} | ${e.winDay ? '✅' : '❌'} |`;
+  const text = `| ${e.date} | ${e.phoneDown || '—'} | ${e.feetOnFloor || '—'} | ${e.feetGap ?? '—'} | ${e.hitDay ? '✅' : '❌'} |`;
   navigator.clipboard.writeText(text);
   showToast('Day row copied.');
 }
@@ -440,9 +482,9 @@ function csvEscape(v) {
   return '"' + s.replaceAll('"', '""') + '"';
 }
 function exportCSV() {
-  const rows = [['date','phone_down','feet_on_floor','gap_minutes','win_day','phone_on_time','feet_on_time']];
+  const rows = [['date','phone_down','phone_tags','phone_reason','feet_on_floor','feet_on_floor_time','gap_minutes','hit_day','feet_tags','feet_reason']];
   getSortedLogs().reverse().forEach(e => {
-    rows.push([e.date, e.phoneDown || '', e.feetOnFloor || '', e.feetGap ?? '', e.winDay ? 'TRUE' : 'FALSE', e.phoneOnTime === null ? '' : (e.phoneOnTime ? 'TRUE' : 'FALSE'), e.feetOnTime === null ? '' : (e.feetOnTime ? 'TRUE' : 'FALSE')]);
+    rows.push([e.date, e.phoneDown || '', (e.phoneTags||[]).join('; '), e.phoneReason || '', e.feetOnFloor || '', e.feetOnTime === null ? '' : (e.feetOnTime ? 'TRUE' : 'FALSE'), e.feetGap ?? '', e.hitDay ? 'TRUE' : 'FALSE', (e.feetTags||[]).join('; '), e.feetReason || '']);
   });
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
   downloadFile('frans-routine-log.csv', csv, 'text/csv;charset=utf-8;');
@@ -473,12 +515,17 @@ function exportMarkdown() {
     return d >= sow && d <= eow;
   });
   const feetLogs = weekLogs.filter(x => x.feetGap !== null && x.feetGap !== undefined);
-  const wins = weekLogs.filter(x => x.winDay).length;
+  const wins = weekLogs.filter(x => x.hitDay).length;
   const total = feetLogs.length;
   const avg = feetLogs.length ? Math.round(feetLogs.reduce((s,x)=>s+x.feetGap,0)/feetLogs.length) : '—';
   const title = `# Week of ${MONTHS[sow.getMonth()]} ${sow.getDate()}–${MONTHS[eow.getMonth()]} ${eow.getDate()}, ${eow.getFullYear()}`;
-  const table = ['| Date | Phone Down | Feet on Floor | Gap | Win? |','|------|------------|---------------|-----|------|', ...weekLogs.map(e => `| ${e.date} | ${e.phoneDown || '—'} | ${e.feetOnFloor || '—'} | ${e.feetGap ?? '—'} | ${e.winDay ? '✅' : '❌'} |`) ].join('\n');
-  const md = `${title}\n\n## Data\n${table}\n\n## This Week\n- **Win rate:** ${wins}/${total || weekLogs.length}\n- **Avg gap:** ${avg === '—' ? '—' : avg + ' min'}\n- **Pattern:** Fill this in after reviewing the week.\n\n## Next Week Adjustment\n- One change only: __________\n`;
+  const noteFor = e => [[(e.phoneTags||[]).join(', '), e.phoneReason||''].filter(Boolean).join(' — ')||'', [(e.feetTags||[]).join(', '), e.feetReason||''].filter(Boolean).join(' — ')||''];
+  const weekRows = weekLogs.map(e => { const [pn,fn]=noteFor(e); return `| ${e.date} | ${e.phoneDown||'—'} | ${pn} | ${e.feetOnFloor||'—'} | ${e.feetGap??'—'} | ${e.hitDay?'✅':'❌'} | ${fn} |`; });
+  const table = ['| Date | Phone Down | Phone Note | Feet on Floor | Gap | Hit? | Feet Note |','|------|------------|------------|---------------|-----|------|-----------|',...weekRows].join('\n');
+  const allLogs = getSortedLogs().reverse();
+  const allRows = allLogs.map(e => { const [pn,fn]=noteFor(e); return `| ${e.date} | ${e.phoneDown||'—'} | ${pn} | ${e.feetOnFloor||'—'} | ${e.feetGap??'—'} | ${e.hitDay?'✅':'❌'} | ${fn} |`; });
+  const fullTable = ['| Date | Phone Down | Phone Note | Feet on Floor | Gap | Hit? | Feet Note |','|------|------------|------------|---------------|-----|------|-----------|',...allRows].join('\n');
+  const md = `${title}\n\n## This Week\n${table}\n\n## Weekly Summary\n- **Hit rate:** ${wins}/${total||weekLogs.length}\n- **Avg gap:** ${avg==='—'?'—':avg+' min'}\n- **Pattern:** Fill this in.\n\n## Next Week Adjustment\n- One change only: __________\n\n---\n\n## Full Log (All Entries)\n${fullTable}\n`;
   downloadFile(`frans-week-${sow.getFullYear()}-${pad(sow.getMonth()+1)}-${pad(sow.getDate())}.md`, md, 'text/markdown;charset=utf-8;');
   showToast('Markdown exported.');
 }
@@ -528,11 +575,44 @@ function downloadFile(filename, content, type) {
     } catch (e) {}
   }, 500);
 }
+
+function toggleTag(field, tag) {
+  const t = ensureToday();
+  const key = field === 'phone' ? 'phoneTags' : 'feetTags';
+  if (!t[key]) t[key] = [];
+  const idx = t[key].indexOf(tag);
+  if (idx > -1) t[key].splice(idx, 1);
+  else t[key].push(tag);
+  t.updatedAt = new Date().toISOString();
+  saveState();
+  renderTags();
+  showToast(t[key].length ? `Tagged: ${t[key].join(', ')}` : 'Tag removed.');
+}
+function saveReason(field) {
+  const t = ensureToday();
+  if (field === 'phone') t.phoneReason = document.getElementById('phoneReasonInput').value;
+  else t.feetReason = document.getElementById('feetReasonInput').value;
+  t.updatedAt = new Date().toISOString();
+  saveState();
+}
+function renderTags() {
+  const t = ensureToday();
+  const pRow = document.getElementById('phoneTagRow');
+  if (pRow) pRow.querySelectorAll('.tag').forEach(btn => btn.classList.toggle('active', t.phoneTags && t.phoneTags.includes(btn.textContent.trim())));
+  const fRow = document.getElementById('feetTagRow');
+  if (fRow) fRow.querySelectorAll('.tag').forEach(btn => btn.classList.toggle('active', t.feetTags && t.feetTags.includes(btn.textContent.trim())));
+  const pri = document.getElementById('phoneReasonInput');
+  if (pri && pri !== document.activeElement) pri.value = t.phoneReason || '';
+  const fri = document.getElementById('feetReasonInput');
+  if (fri && fri !== document.activeElement) fri.value = t.feetReason || '';
+}
+
 function renderAll() {
   ensureToday();
   renderToday();
   renderSummary();
   renderHistory();
+  renderTags();
 }
 let toastT;
 function showToast(msg) {
