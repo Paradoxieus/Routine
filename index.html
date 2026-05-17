@@ -301,7 +301,17 @@ function defaultState() {
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : defaultState();
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    // Migrate: backfill hitDay from winDay for old entries
+    Object.values(parsed.logs || {}).forEach(e => {
+      if (e.hitDay === undefined || e.hitDay === null) e.hitDay = !!e.winDay;
+      if (!e.phoneTags) e.phoneTags = [];
+      if (!e.feetTags) e.feetTags = [];
+      if (!e.phoneReason) e.phoneReason = '';
+      if (!e.feetReason) e.feetReason = '';
+    });
+    return parsed;
   } catch (e) {
     return defaultState();
   }
@@ -410,7 +420,7 @@ function getSortedLogs() {
 function computeSummary() {
   const logs = Object.values(state.logs);
   const withFeet = logs.filter(x => x.feetGap !== null && x.feetGap !== undefined);
-  const wins = logs.filter(x => x.hitDay).length;
+  const wins = logs.filter(x => (x.hitDay||x.winDay)).length;
   const totalDays = withFeet.length;
   const avgGap = withFeet.length ? Math.round(withFeet.reduce((s,x)=>s+x.feetGap,0)/withFeet.length) : null;
   const rate = totalDays ? Math.round((wins/totalDays)*100) : 0;
@@ -459,7 +469,7 @@ function renderHistory() {
 }
 function copyDay(key) {
   const e = state.logs[key];
-  const text = `| ${e.date} | ${e.phoneDown || '—'} | ${e.feetOnFloor || '—'} | ${e.feetGap ?? '—'} | ${e.hitDay ? '✅' : '❌'} |`;
+  const text = `| ${e.date} | ${e.phoneDown || '—'} | ${e.feetOnFloor || '—'} | ${e.feetGap ?? '—'} | ${(e.hitDay||e.winDay) ? '✅' : '❌'} |`;
   navigator.clipboard.writeText(text);
   showToast('Day row copied.');
 }
@@ -484,7 +494,7 @@ function csvEscape(v) {
 function exportCSV() {
   const rows = [['date','phone_down','phone_tags','phone_reason','feet_on_floor','feet_on_floor_time','gap_minutes','hit_day','feet_tags','feet_reason']];
   getSortedLogs().reverse().forEach(e => {
-    rows.push([e.date, e.phoneDown || '', (e.phoneTags||[]).join('; '), e.phoneReason || '', e.feetOnFloor || '', e.feetOnTime === null ? '' : (e.feetOnTime ? 'TRUE' : 'FALSE'), e.feetGap ?? '', e.hitDay ? 'TRUE' : 'FALSE', (e.feetTags||[]).join('; '), e.feetReason || '']);
+    rows.push([e.date, e.phoneDown || '', (e.phoneTags||[]).join('; '), e.phoneReason || '', e.feetOnFloor || '', e.feetOnTime === null ? '' : (e.feetOnTime ? 'TRUE' : 'FALSE'), e.feetGap ?? '', (e.hitDay||e.winDay) ? 'TRUE' : 'FALSE', (e.feetTags||[]).join('; '), e.feetReason || '']);
   });
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
   downloadFile('frans-routine-log.csv', csv, 'text/csv;charset=utf-8;');
@@ -515,15 +525,15 @@ function exportMarkdown() {
     return d >= sow && d <= eow;
   });
   const feetLogs = weekLogs.filter(x => x.feetGap !== null && x.feetGap !== undefined);
-  const wins = weekLogs.filter(x => x.hitDay).length;
+  const wins = weekLogs.filter(x => (x.hitDay||x.winDay)).length;
   const total = feetLogs.length;
   const avg = feetLogs.length ? Math.round(feetLogs.reduce((s,x)=>s+x.feetGap,0)/feetLogs.length) : '—';
   const title = `# Week of ${MONTHS[sow.getMonth()]} ${sow.getDate()}–${MONTHS[eow.getMonth()]} ${eow.getDate()}, ${eow.getFullYear()}`;
   const noteFor = e => [[(e.phoneTags||[]).join(', '), e.phoneReason||''].filter(Boolean).join(' — ')||'', [(e.feetTags||[]).join(', '), e.feetReason||''].filter(Boolean).join(' — ')||''];
-  const weekRows = weekLogs.map(e => { const [pn,fn]=noteFor(e); return `| ${e.date} | ${e.phoneDown||'—'} | ${pn} | ${e.feetOnFloor||'—'} | ${e.feetGap??'—'} | ${e.hitDay?'✅':'❌'} | ${fn} |`; });
+  const weekRows = weekLogs.map(e => { const [pn,fn]=noteFor(e); return `| ${e.date} | ${e.phoneDown||'—'} | ${pn} | ${e.feetOnFloor||'—'} | ${e.feetGap??'—'} | ${(e.hitDay||e.winDay)?'✅':'❌'} | ${fn} |`; });
   const table = ['| Date | Phone Down | Phone Note | Feet on Floor | Gap | Hit? | Feet Note |','|------|------------|------------|---------------|-----|------|-----------|',...weekRows].join('\n');
   const allLogs = getSortedLogs().reverse();
-  const allRows = allLogs.map(e => { const [pn,fn]=noteFor(e); return `| ${e.date} | ${e.phoneDown||'—'} | ${pn} | ${e.feetOnFloor||'—'} | ${e.feetGap??'—'} | ${e.hitDay?'✅':'❌'} | ${fn} |`; });
+  const allRows = allLogs.map(e => { const [pn,fn]=noteFor(e); return `| ${e.date} | ${e.phoneDown||'—'} | ${pn} | ${e.feetOnFloor||'—'} | ${e.feetGap??'—'} | ${(e.hitDay||e.winDay)?'✅':'❌'} | ${fn} |`; });
   const fullTable = ['| Date | Phone Down | Phone Note | Feet on Floor | Gap | Hit? | Feet Note |','|------|------------|------------|---------------|-----|------|-----------|',...allRows].join('\n');
   const md = `${title}\n\n## This Week\n${table}\n\n## Weekly Summary\n- **Hit rate:** ${wins}/${total||weekLogs.length}\n- **Avg gap:** ${avg==='—'?'—':avg+' min'}\n- **Pattern:** Fill this in.\n\n## Next Week Adjustment\n- One change only: __________\n\n---\n\n## Full Log (All Entries)\n${fullTable}\n`;
   downloadFile(`frans-week-${sow.getFullYear()}-${pad(sow.getMonth()+1)}-${pad(sow.getDate())}.md`, md, 'text/markdown;charset=utf-8;');
