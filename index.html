@@ -258,8 +258,9 @@
   <div class="section-label">Log History</div>
   <div class="history-wrap" id="historyWrap"></div>
 
-  <div class="section-label">Daily Schedule</div>
-  <div class="routine-list">
+  <div class="section-label">Schedule</div>
+  <div id="scheduleMode" style="margin-bottom:8px;font-size:0.64rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);">Loading...</div>
+  <div class="routine-list" id="weekdaySchedule">
     <div class="r-card" data-s="360" data-e="375"><div class="r-time">6:00</div><div class="r-info"><div class="r-title">Alarm fires</div><div class="r-desc">Sit up. Lights on. Feet on floor within 30 sec.</div></div><div class="r-icon">⚡</div></div>
     <div class="r-card" data-s="375" data-e="400"><div class="r-time">6:15</div><div class="r-info"><div class="r-title">15-min freedom window</div><div class="r-desc">Anything. No going horizontal. No doom scroll.</div></div><div class="r-icon">🪟</div></div>
     <div class="r-card" data-s="400" data-e="450"><div class="r-time">6:40</div><div class="r-info"><div class="r-title">Bath → Skincare → Ready</div><div class="r-desc">Phone goes in bag after this. Morning stays clean.</div></div><div class="r-icon">🚿</div></div>
@@ -268,6 +269,17 @@
     <div class="r-card" data-s="1140" data-e="1350"><div class="r-time">7 PM</div><div class="r-info"><div class="r-title">Active window</div><div class="r-desc">Free time. Games on weekdays = no. Weekends only.</div></div><div class="r-icon">🕹️</div></div>
     <div class="r-card warn" data-s="1350" data-e="1380"><div class="r-time">10:30</div><div class="r-info"><div class="r-title">PHONE DOWN 🔒</div><div class="r-desc">In the drawer. Not face-down — in the drawer. Log it.</div></div><div class="r-icon">🔒</div></div>
     <div class="r-card" data-s="1380" data-e="1440"><div class="r-time">11 PM</div><div class="r-info"><div class="r-title">Horizontal. Lights off.</div><div class="r-desc">7 hours before 6 AM. Sleep onset target.</div></div><div class="r-icon">🌙</div></div>
+  </div>
+
+  <div class="routine-list" id="weekendSchedule" style="display:none; margin-top:10px;">
+    <div class="r-card" data-s="360" data-e="375"><div class="r-time">6:00</div><div class="r-info"><div class="r-title">Wake + no snooze</div><div class="r-desc">Same wake anchor. Keep it consistent even on weekends.</div></div><div class="r-icon">⏰</div></div>
+    <div class="r-card" data-s="375" data-e="540"><div class="r-time">6:15</div><div class="r-info"><div class="r-title">Freedom window</div><div class="r-desc">Gaming, rest, family, or going out prep. No guilt. No phone bedrot.</div></div><div class="r-icon">🕹️</div></div>
+    <div class="r-card" data-s="540" data-e="720"><div class="r-time">9:00</div><div class="r-info"><div class="r-title">Morning block</div><div class="r-desc">Breakfast, errands, chores, family, or a slow start.</div></div><div class="r-icon">🏠</div></div>
+    <div class="r-card" data-s="720" data-e="1020"><div class="r-time">12 PM</div><div class="r-info"><div class="r-title">Midday</div><div class="r-desc">Lunch, rest, socials, or gaming allowed.</div></div><div class="r-icon">🍽️</div></div>
+    <div class="r-card" data-s="1020" data-e="1260"><div class="r-time">5 PM</div><div class="r-info"><div class="r-title">Afternoon buffer</div><div class="r-desc">Wind-down prep. Keep the evening clean.</div></div><div class="r-icon">🌇</div></div>
+    <div class="r-card" data-s="1260" data-e="1350"><div class="r-time">7 PM</div><div class="r-info"><div class="r-title">Free evening</div><div class="r-desc">Games, going out, family, or social time.</div></div><div class="r-icon">🎮</div></div>
+    <div class="r-card warn" data-s="1350" data-e="1380"><div class="r-time">10:30</div><div class="r-info"><div class="r-title">PHONE DOWN 🔒</div><div class="r-desc">Same hard stop. Drawer, not face-down.</div></div><div class="r-icon">🔒</div></div>
+    <div class="r-card" data-s="1380" data-e="1440"><div class="r-time">11 PM</div><div class="r-info"><div class="r-title">Horizontal. Lights off.</div><div class="r-desc">Keep the sleep target steady.</div></div><div class="r-icon">🌙</div></div>
   </div>
 
   <div class="section-label">Non-Negotiables</div>
@@ -345,20 +357,37 @@ function formatDateHuman(key) {
 function updateClock() {
   const now = new Date();
   const h = now.getHours(), m = now.getMinutes();
+  const day = now.getDay();
+  const weekend = day === 0 || day === 6;
   document.getElementById('hh').textContent = pad(h % 12 || 12);
   document.getElementById('mm').textContent = pad(m);
   document.getElementById('ampm').textContent = h >= 12 ? 'PM' : 'AM';
-  document.getElementById('dateline').textContent = `${DAYS[now.getDay()]} · ${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  document.getElementById('dateline').textContent = `${DAYS[day]} · ${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  document.getElementById('scheduleMode').textContent = weekend ? 'Weekend mode: gaming / rest / family' : 'Weekday mode: work block';
+  document.getElementById('weekdaySchedule').style.display = weekend ? 'none' : 'flex';
+  document.getElementById('weekendSchedule').style.display = weekend ? 'flex' : 'none';
   const mins = h * 60 + m;
   let phase;
-  if (mins < 360) phase = '🌙 Sleep window';
-  else if (mins < 390) phase = '⚡ Wake sequence';
-  else if (mins < 450) phase = '🚿 Morning prep';
-  else if (mins < 1050) phase = '💼 Work block';
-  else if (mins < 1140) phase = '🏠 Recovery buffer';
-  else if (mins < 1350) phase = '🕹️ Active window';
-  else if (mins < 1380) phase = '🔒 Phone down — NOW';
-  else phase = '🌙 Wind-down';
+  if (weekend) {
+    if (mins < 360) phase = '🌙 Sleep window';
+    else if (mins < 375) phase = '⏰ Wake + no snooze';
+    else if (mins < 540) phase = '🕹️ Freedom window';
+    else if (mins < 720) phase = '🏠 Morning block';
+    else if (mins < 1020) phase = '🍽️ Midday';
+    else if (mins < 1260) phase = '🌇 Afternoon buffer';
+    else if (mins < 1350) phase = '🎮 Free evening';
+    else if (mins < 1380) phase = '🔒 Phone down — NOW';
+    else phase = '🌙 Wind-down';
+  } else {
+    if (mins < 360) phase = '🌙 Sleep window';
+    else if (mins < 390) phase = '⚡ Wake sequence';
+    else if (mins < 450) phase = '🚿 Morning prep';
+    else if (mins < 1050) phase = '💼 Work block';
+    else if (mins < 1140) phase = '🏠 Recovery buffer';
+    else if (mins < 1350) phase = '🕹️ Active window';
+    else if (mins < 1380) phase = '🔒 Phone down — NOW';
+    else phase = '🌙 Wind-down';
+  }
   document.getElementById('phaseText').textContent = phase;
   document.querySelectorAll('.r-card').forEach(c => {
     if (!c.classList.contains('warn')) {
